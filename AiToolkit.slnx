@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AiToolkit.Sandbox/AiToolkit.Sandbox.csproj" />
+  <Project Path="AiToolkit/AiToolkit.csproj" />
+</Solution>
