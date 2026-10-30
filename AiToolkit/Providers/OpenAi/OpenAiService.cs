@@ -1,29 +1,35 @@
 ﻿using AiToolkit.Contracts;
 using OpenAI.Responses;
-#pragma warning disable OPENAI001
 
-namespace AiToolkit.Providers.OpenAi;
+namespace AiToolkit.Providers.OpenAI;
 
+/// <summary>
+/// <see cref="IAiService"/> implementation for OpenAI, using the Responses API.
+/// </summary>
+/// <remarks>
+/// Supported models and their capabilities are listed in <see cref="OpenAiModels"/>.
+/// Requests are validated against the selected model before they are sent.
+/// </remarks>
 public class OpenAiService : IAiService
 {
-    private record ModelCapabilities(bool SupportsSampling, bool SupportsReasoning);
-
-    private static readonly Dictionary<string, ModelCapabilities> Models = new()
-    {
-        ["gpt-4o-mini"] = new(SupportsSampling: true, SupportsReasoning: false),
-        ["gpt-4.1"] = new(SupportsSampling: true, SupportsReasoning: false),
-        ["gpt-4.1-mini"] = new(SupportsSampling: true, SupportsReasoning: false),
-        ["gpt-5"] = new(SupportsSampling: false, SupportsReasoning: true),
-        ["gpt-5-mini"] = new(SupportsSampling: false, SupportsReasoning: true),
-    };
+    /// <inheritdoc/>
+    public IReadOnlyList<ModelInfo> SupportedModels => OpenAiModels.All;
 
     private readonly ResponsesClient _client;
 
+    /// <summary>
+    /// Creates a service that sends requests through the given client.
+    /// </summary>
+    /// <param name="client">
+    /// An authenticated OpenAI Responses client. Create it once and reuse it
+    /// for the lifetime of the application.
+    /// </param>
     public OpenAiService(ResponsesClient client)
     {
         _client = client;
     }
 
+    /// <inheritdoc/>
     public async Task<string> GetResponseAsync(AiRequest request, CancellationToken ct = default)
     {
         Validate(request);
@@ -33,24 +39,25 @@ public class OpenAiService : IAiService
 
         if (response.Status == ResponseStatus.Incomplete)
             throw new InvalidOperationException(
-                $"Svaret blev afbrudt: {response.IncompleteStatusDetails?.Reason}");
+                $"The response was incomplete: {response.IncompleteStatusDetails?.Reason}");
 
         return response.GetOutputText();
     }
 
     private static void Validate(AiRequest request)
     {
-        if (!Models.TryGetValue(request.Model, out var caps))
-            throw new ArgumentException($"Ukendt OpenAI-model '{request.Model}'. Tilføj den til Models-tabellen.");
+        var model = OpenAiModels.Find(request.Model)
+            ?? throw new ArgumentException(
+                $"Unknown OpenAI model '{request.Model}'. See OpenAiModels.All for supported models.");
 
-        if (!caps.SupportsSampling && (request.Temperature is not null || request.TopP is not null))
-            throw new NotSupportedException($"{request.Model} understøtter ikke Temperature/TopP.");
+        if (!model.SupportsSampling && (request.Temperature is not null || request.TopP is not null))
+            throw new NotSupportedException($"{model.Id} does not support Temperature or TopP.");
 
         if (request.Temperature > 2f)
-            throw new ArgumentOutOfRangeException(nameof(request.Temperature), "OpenAI tillader Temperature mellem 0 og 2.");
+            throw new ArgumentOutOfRangeException(nameof(request.Temperature), "OpenAI requires Temperature to be between 0 and 2.");
 
-        if (!caps.SupportsReasoning && request.ReasoningEffort is not null)
-            throw new NotSupportedException($"{request.Model} er ikke en reasoning-model.");
+        if (!model.SupportsReasoning && request.ReasoningEffort is not null)
+            throw new NotSupportedException($"{model.Id} is not a reasoning model and does not support ReasoningEffort.");
     }
 
     private static CreateResponseOptions ToOptions(AiRequest request)
