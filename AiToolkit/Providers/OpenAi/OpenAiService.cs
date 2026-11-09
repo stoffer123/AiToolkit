@@ -69,6 +69,10 @@ public class OpenAiService : IAiService
             Temperature = request.Temperature,
             TopP = request.TopP,
             MaxOutputTokenCount = request.MaxOutputTokens,
+            ConversationOptions = new ResponseConversationOptions()
+            {
+                
+            }
         };
 
         if (request.ReasoningEffort is { } effort)

@@ -63,6 +63,18 @@ public class PromptBuilder
     }
 
     /// <summary>
+    /// Adds several messages to the conversation, in order.
+    /// </summary>
+    /// <remarks>Use this to include the history of an ongoing conversation.</remarks>
+    /// <param name="messages">The messages to add.</param>
+    /// <returns>The same builder, for chaining.</returns>
+    public PromptBuilder AddMessages(IEnumerable<ChatMessage> messages)
+    {
+        _messages.AddRange(messages);
+        return this;
+    }
+
+    /// <summary>
     /// Adds a previous reply from the model to the conversation.
     /// </summary>
     /// <remarks>
