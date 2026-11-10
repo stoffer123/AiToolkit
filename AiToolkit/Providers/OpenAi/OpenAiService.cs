@@ -89,9 +89,12 @@ public class OpenAiService : IAiService
             options.InputItems.Add(msg.Role switch
             {
                 ChatRole.Assistant => ResponseItem.CreateAssistantMessageItem(msg.Content),
+                ChatRole.Developer => ResponseItem.CreateDeveloperMessageItem(msg.Content),
                 _ => ResponseItem.CreateUserMessageItem(msg.Content),
             });
         }
+
+
 
         return options;
     }

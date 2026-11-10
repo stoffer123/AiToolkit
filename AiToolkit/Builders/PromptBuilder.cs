@@ -75,6 +75,21 @@ public class PromptBuilder
     }
 
     /// <summary>
+    /// Adds an instruction from the application at the current position in the conversation.
+    /// </summary>
+    /// <remarks>
+    /// Use it for short, important rules the model must follow even late in a conversation.
+    /// Placed after the newest user message, it carries more weight than the general instructions.
+    /// </remarks>
+    /// <param name="text">The instruction text.</param>
+    /// <returns>The same builder, for chaining.</returns>
+    public PromptBuilder AddDeveloperMessage(string text)
+    {
+        _messages.Add(new ChatMessage(ChatRole.Developer, text));
+        return this;
+    }
+
+    /// <summary>
     /// Adds a previous reply from the model to the conversation.
     /// </summary>
     /// <remarks>
