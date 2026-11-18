@@ -1,5 +1,6 @@
 ﻿using AiToolkit.Contracts;
 using OpenAI.Responses;
+using System.Runtime.CompilerServices;
 
 namespace AiToolkit.Providers.OpenAI;
 
@@ -43,6 +44,31 @@ public class OpenAiService : IAiService
 
         return response.GetOutputText();
     }
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<string> StreamResponseAsync(AiRequest request, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        Validate(request);
+        CreateResponseOptions options = ToOptions(request);
+
+        await foreach (StreamingResponseUpdate update in _client.CreateResponseStreamingAsync(options, ct))
+        {
+            switch (update)
+            {
+                case StreamingResponseOutputTextDeltaUpdate delta:
+                    yield return delta.Delta;
+                    break;
+                case StreamingResponseIncompleteUpdate incomplete:
+                    throw new InvalidOperationException(
+                        $"The response was incomplete: {incomplete.Response.IncompleteStatusDetails?.Reason}");
+                case StreamingResponseFailedUpdate failed:
+                    throw new InvalidOperationException($"The response failed: {failed.Response.Error?.Message}");
+                case StreamingResponseErrorUpdate error:
+                    throw new InvalidOperationException($"The stream failed: {error.Message}");
+            }
+        }
+    }
+
 
     private static void Validate(AiRequest request)
     {

@@ -33,5 +33,28 @@ namespace AiToolkit.Contracts
         /// The response was incomplete, for example because the output token limit was reached.
         /// </exception>
         Task<string> GetResponseAsync(AiRequest request, CancellationToken ct = default);
+
+        /// <summary>
+        /// Sends the request to the model and returns the generated text piece by piece,
+        /// as it is produced.
+        /// </summary>
+        /// <remarks>
+        /// The request is validated and sent when enumeration starts, not when this method
+        /// is called, so exceptions are thrown from the <c>await foreach</c> loop. An exception
+        /// can arrive after some text has already been returned. The caller decides what to do
+        /// with that partial text.
+        /// </remarks>
+        /// <param name="request">The request to send. Build one with <c>PromptBuilder</c>.</param>
+        /// <param name="ct">Token used to cancel the request, also while text is being received.</param>
+        /// <returns>The pieces of generated text, in order. Join them to get the full reply.</returns>
+        /// <exception cref="ArgumentException">The model is unknown to this provider.</exception>
+        /// <exception cref="NotSupportedException">
+        /// The request uses a parameter the selected model does not support.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The response failed or was incomplete, for example because the output token limit was reached.
+        /// </exception>
+        /// <exception cref="OperationCanceledException"><paramref name="ct"/> was canceled.</exception>
+        IAsyncEnumerable<string> StreamResponseAsync(AiRequest request, CancellationToken ct = default);
     }
 }
